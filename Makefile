@@ -1,4 +1,5 @@
-OBJS_BOOTPACK=bootpack.obj naskfunc.obj hankaku.obj graphic.obj dsctbl.obj
+OBJS_BOOTPACK=bootpack.obj naskfunc.obj hankaku.obj graphic.obj dsctbl.obj int.obj
+
 
 TOOLPATH=../z_tools/
 INCPATH	=../z_tools/haribote/
@@ -19,10 +20,12 @@ DEL      = del
 
 #默认设定
 
+
 default:
 	$(MAKE) img
 
 #生成规则
+
 
 ipl10.bin:ipl10.nas Makefile
 	$(NASK) ipl10.nas ipl10.bin ipl10.lst
@@ -30,12 +33,14 @@ ipl10.bin:ipl10.nas Makefile
 asmhead.bin:asmhead.nas Makefile
 	$(NASK) asmhead.nas asmhead.bin asmhead.lst
 	
+
 hankaku.bin:hankaku.txt Makefile
 	$(MAKEFONT) hankaku.txt hankaku.bin
 
 hankaku.obj:hankaku.bin Makefile
 	$(BIN2OBJ) hankaku.bin hankaku.obj _hankaku
 	
+
 bootpack.bim:$(OBJS_BOOTPACK) Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:bootpack.bim stack:3136k map:bootpack.map \
 		$(OBJS_BOOTPACK)
@@ -44,6 +49,7 @@ bootpack.bim:$(OBJS_BOOTPACK) Makefile
 bootpack.hrb:bootpack.bim Makefile
 	$(BIM2HRB) bootpack.bim bootpack.hrb 0
 	
+
 haribote.sys: asmhead.bin bootpack.hrb Makefile
 	copy /B asmhead.bin+bootpack.hrb haribote.sys
 
@@ -55,29 +61,38 @@ haribote.img:ipl10.bin haribote.sys Makefile
 		
 #一般规则
 
+
+
 %.gas:%.c Makefile
 	$(CC1) -o $*.gas $*.c
 	
+
 %.nas:%.gas Makefile
 	$(GAS2NASK) $*.gas $*.nas
 	
+
 %.obj:%.nas Makefile
 	$(NASK) $*.nas $*.obj $*.lst
 	
 #命令设定
 
+
+
 img:
 	$(MAKE) haribote.img
 	
+
 run:
 	$(MAKE) img
 	$(COPY) haribote.img ..\z_tools\qemu\fdimage0.bin
 	$(MAKE) -C ../z_tools/qemu
 	
+
 install:
 	$(MAKE) img
 	$(IMGTOL) w a:haribote.img
 	
+
 clean:
 	-$(DEL) *.bin
 	-$(DEL) *.lst
@@ -87,6 +102,7 @@ clean:
 	-$(DEL) bootpack.hrb
 	-$(DEL) haribote.sys
 	
+
 src_only :
 	$(MAKE) clean
 	-$(DEL) haribote.img
