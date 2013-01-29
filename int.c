@@ -28,22 +28,22 @@ struct FIFO8 keyfifo;
 void inthandler21(int *esp)					//处理PS/2键盘的中断
 {
 	unsigned char data;
-	io_out8(PIC0_OCW2, 0x61);				//回复中断响应
+	io_out8(PIC0_OCW2, 0x61);				//恢复1号中断响应，PIC0的1号
 	data = io_in8(PORT_KEYDAT);
 	fifo8_put(&keyfifo, data);
 	return;
 }
 
+struct FIFO8 mousefifo;
+
 void inthandler2c(int *esp)					//处理PS/2鼠标的中断
 {
-	struct BOOTINFO *binfo=(struct BOOTINFO *) ADR_BOOTINFO;
-	boxfill8(binfo->vram,binfo->scrnx,COL8_000000,0,0,32*8-1,15);
-	putfonts8_asc(binfo->vram,binfo->scrnx,0,0,COL8_FFFFFF,"INT 2C (IRQ 12):PS/2 mouse");
-	
-	while(1)
-	{
-		io_hlt();
-	}
+	unsigned char data;
+	io_out8(PIC1_OCW2,0x64);				//恢复12号中断响应，PIC1的4号
+	io_out8(PIC0_OCW2,0x62);				//恢复2号中断响应，PIC0的2号链接PIC1
+	data = io_in8(PORT_KEYDAT);
+	fifo8_put(&mousefifo,data);
+	return;
 }
 
 void inthandler27(int *esp)					//处理pic初始化时的IRQ7中断
