@@ -14,6 +14,7 @@ struct BOOTINFO
 void io_hlt();
 void io_cli();
 void io_sti();
+void io_stihlt();
 void io_out8(int port,int data);
 int io_load_eflags();
 void io_store_eflags(int eflags);
@@ -23,6 +24,17 @@ void load_idtr(int limit,int addr);
 void asm_inthandler21(void);
 void asm_inthandler27(void);
 void asm_inthandler2c(void);
+
+//fifo.c
+struct FIFO8
+{
+	unsigned char *buf;
+	int p,q,size,free,flags;		//写入地址，读出地址，空字节数，可用性
+};
+void fifo8_init(struct FIFO8 *fifo, int size, unsigned char *buf);
+int fifo8_put(struct FIFO8 *fifo, unsigned char data);
+int fifo8_get(struct FIFO8 *fifo);
+int fifo8_status(struct FIFO8 *fifo);
 
 //graphic.c
 void init_palette();
