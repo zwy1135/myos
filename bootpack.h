@@ -22,6 +22,10 @@ void io_store_eflags(int eflags);
 void load_gdtr(int limit,int addr);
 void load_idtr(int limit,int addr);
 
+int load_cr0();
+void store_cr0(int cr0);
+unsigned int memtest_sub(unsigned int start,unsigned int end);
+
 void asm_inthandler21(void);
 void asm_inthandler27(void);
 void asm_inthandler2c(void);

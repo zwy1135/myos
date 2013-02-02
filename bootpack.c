@@ -5,6 +5,8 @@
 extern struct FIFO8 keyfifo;
 extern struct FIFO8 mousefifo;
 
+unsigned int memtest(unsigned int start,unsigned int end);
+
 void HariMain()
 {
 	struct BOOTINFO *binfo=(struct BOOTINFO *) ADR_BOOTINFO;
@@ -24,6 +26,7 @@ void HariMain()
 	io_out8(PIC1_IMR, 0xef); /* IRQ12打开，鼠标启用(11101111) */
 	
 	init_keybroad();
+	enable_mouse(&mdec);
 	
 	init_palette();
 	init_screen8(binfo->vram,binfo->scrnx,binfo->scrny);//画屏幕背景
@@ -34,7 +37,12 @@ void HariMain()
 	sprintf(s,"(%d,%d)",mx,my);	//写入内存
 	putfonts8_asc(binfo->vram,binfo->scrnx,0,0,COL8_FFFFFF,s);//输出mx，my
 	
-	enable_mouse(&mdec);
+	//内存检查结果
+	i = memtest(0x00400000,0xbfffffff) / (1024 * 1024);
+	sprintf(s,"memory %d MB",i);
+	putfonts8_asc(binfo->vram,binfo->scrnx,0,32,COL8_FFFFFF,s);
+	
+	
 	
 	while(1)
 	{
@@ -98,5 +106,43 @@ void HariMain()
 			}
 		}
 	}
+}
+
+//内存检查
+#define EFLAGS_AC_BIT		0x00040000
+#define CR0_CACHE_DISABLE	0x60000000
+
+unsigned int memtest(unsigned int start,unsigned int end)
+{
+	char flag486 = 0;
+	unsigned int eflag,cr0,i;
+	//确认是386还是486
+	eflag = io_load_eflags();
+	eflag |= EFLAGS_AC_BIT;				//设定AC_BIT = 1,386设完后会自动归零
+	io_store_eflags(eflag);
+	eflag = io_load_eflags();
+	if((eflag & EFLAGS_AC_BIT) != 0)	//判断AC_BIT是否为1
+	{
+		flag486 = 1;
+	}
+	eflag &= ~EFLAGS_AC_BIT;			//AC_BIT = 0
+	io_store_eflags(eflag);
+	
+	if(flag486 != 0)
+	{
+		cr0 = load_cr0();
+		cr0 |= CR0_CACHE_DISABLE;		//禁止缓存
+		store_cr0(cr0);
+	}
+	
+	i = memtest_sub(start,end);
+	
+	if(flag486 != 0)
+	{
+		cr0 = load_cr0();
+		cr0 &= ~CR0_CACHE_DISABLE;		//启用缓存
+		store_cr0(cr0);
+	}
+	return i;
 }
 
