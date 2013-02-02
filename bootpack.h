@@ -92,9 +92,7 @@ void set_gatedesc(struct GATE_DESCRIPTOR *gd,int offset,int selector,int ar);
 
 //int.c
 void init_pic();
-void inthandler21(int *esp);
 void inthandler27(int *esp);
-void inthandler2c(int *esp);
 #define PIC0_ICW1		0x0020
 #define PIC0_OCW2		0x0020
 #define PIC0_IMR		0x0021
@@ -107,3 +105,30 @@ void inthandler2c(int *esp);
 #define PIC1_ICW2		0x00a1
 #define PIC1_ICW3		0x00a1
 #define PIC1_ICW4		0x00a1
+
+
+//keyboard.c
+void init_keybroad();
+void wait_KBC_sendready();
+void inthandler21(int *esp);
+#define PORT_KEYDAT				0x0060
+#define PORT_KEYSTA				0x0064
+#define PORT_KEYCMD				0x0064
+#define KEYSTA_SEND_NOTREADY	0x02
+#define KEYCMD_WRITE_MODE		0x60
+#define KBC_MODE				0x47
+#define PORT_KEYDAT				0x0060
+
+//mouse.c
+struct MOUSE_DEC
+{
+	unsigned char buf[3],phase;
+	int x,y,btn;						//存放鼠标移动和点击状态的变量
+};
+
+void enable_mouse(struct MOUSE_DEC *mdec);
+int mouse_decode(struct MOUSE_DEC *mdec,unsigned char dat);
+void inthandler2c(int *esp);
+#define KEYCMD_SENDTO_MOUSE		0xd4
+#define MOUSECMD_ENABLE			0xf4
+
