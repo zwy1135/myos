@@ -82,7 +82,7 @@ void sheet_updown(struct SHTCTL *ctl,struct SHEET *sht,int height)
 			}
 			ctl->top--;				//由于显示中的图层少了一个，最上图层高度下降
 		}
-		sheet_refresh(ctl);			//刷新画面
+		sheet_refreshsub(ctl,sht->vx0,sht->vy0,sht->vx0 + sht->bxsize,sht->vy0 + sht->bysize);		//刷新画面
 	}
 	else if(old < height)			//比以前高
 	{
@@ -105,12 +105,42 @@ void sheet_updown(struct SHTCTL *ctl,struct SHEET *sht,int height)
 			ctl->sheets[height] = sht;
 			ctl->top++;				//显示的图层加了一个，最上图层高度加一
 		}
-		sheet_refresh(ctl);
+		sheet_refreshsub(ctl,sht->vx0,sht->vy0,sht->vx0 + sht->bxsize,sht->vy0 + sht->bysize);
 	}
 	return;
 }
 
-void sheet_refresh(struct SHTCTL *ctl)		//从下至上重绘屏幕
+void sheet_refresh(struct SHTCTL *ctl,struct SHEET *sht,int bx0,int by0,int bx1,int by1)		//从下至上重绘屏幕
+{
+	if(sht->height >= 0)		//正在显示则刷新
+	{
+		sheet_refreshsub(ctl,sht->vx0 + bx0,sht->vy0 + by0,sht->vx0 + bx1,sht->vy0 + by1);
+	}
+	return;
+}
+
+void sheet_slide(struct SHTCTL *ctl,struct SHEET *sht,int vx0,int vy0)		//改变图层的位置
+{
+	int old_vx0 = sht->vx0,old_vy0 = sht->vy0;
+	sht->vx0 = vx0;
+	sht->vy0 = vy0;
+	if(sht->height >= 0)				//正在显示才刷新
+	{
+		sheet_refreshsub(ctl,old_vx0,old_vy0,old_vx0 + sht->bxsize,old_vy0 + sht->bysize);
+		sheet_refreshsub(ctl,vx0,vy0,vx0 + sht->bxsize,vy0 +sht->bysize);
+	}
+	return;
+}
+
+void sheet_free(struct SHTCTL *ctl,struct SHEET *sht)			//释放不使用的图层
+{
+	if(sht->height >= 0)		//如果正在显示则隐藏
+		sheet_updown(ctl,sht,-1);
+	sht->flags = 0;				//设为未使用
+	return;
+}
+
+void sheet_refreshsub(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1)		//刷新vx0,vy0到vx1,vy1的范围
 {
 	int h,bx,by,vx,vy;
 	unsigned char *buf,c,*vram = ctl->vram;
@@ -125,31 +155,17 @@ void sheet_refresh(struct SHTCTL *ctl)		//从下至上重绘屏幕
 			for(bx = 0;bx < sht->bxsize;bx++)
 			{
 				vx = sht->vx0 + bx;
-				c = buf[by * sht->bxsize + bx];
-				if(c != sht->col_inv)
+				if(vx0 <= vx && vx < vx1 && vy0 <= vy && vy < vy1)
 				{
-					vram[vy * ctl->xsize + vx] = c;
+					c = buf[by * sht->bxsize + bx];
+					if(c != sht->col_inv)
+					{
+						vram[vy * ctl->xsize + vx] = c;
+					}
 				}
 			}
 		}
 	}
-	return;
-}
-
-void sheet_slide(struct SHTCTL *ctl,struct SHEET *sht,int vx0,int vy0)		//改变图层的位置
-{
-	sht->vx0 = vx0;
-	sht->vy0 = vy0;
-	if(sht->height >= 0)
-		sheet_refresh(ctl);
-	return;
-}
-
-void sheet_free(struct SHTCTL *ctl,struct SHEET *sht)			//释放不使用的图层
-{
-	if(sht->height >= 0)		//如果正在显示则隐藏
-		sheet_updown(ctl,sht,-1);
-	sht->flags = 0;				//设为未使用
 	return;
 }
 
