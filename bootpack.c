@@ -9,10 +9,13 @@ void HariMain()
 {
 	struct BOOTINFO *binfo=(struct BOOTINFO *) ADR_BOOTINFO;
 	struct MOUSE_DEC mdec;
-	char s[40],mcursor[256],keybuf[32],mousebuf[128];
+	char s[40],keybuf[32],mousebuf[128];
 	int mx,my,i;
 	unsigned int memtotal;
 	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
+	struct SHTCTL *shtctl;
+	struct SHEET *sht_back,*sht_mouse;
+	unsigned char *buf_back,buf_mouse[256];
 	
 	//初始化部分
 	init_gdtidt();
@@ -36,18 +39,31 @@ void HariMain()
 	
 	init_palette();
 	
+	shtctl = shtctl_init(memman,binfo->vram,binfo->scrnx,binfo->scrny);
+	sht_back = sheet_alloc(shtctl);
+	sht_mouse = sheet_alloc(shtctl);
+	buf_back = (unsigned char *)memman_alloc_4k(memman,binfo->scrnx * binfo->scrny);
+	sheet_setbuf(sht_back,buf_back,binfo->scrnx,binfo->scrny,-1);	//背景无透明色
+	sheet_setbuf(sht_mouse,buf_mouse,16,16,99);		//透明色为99
+	
 	//以下是显示的内容
-	init_screen8(binfo->vram,binfo->scrnx,binfo->scrny);//画屏幕背景
+	init_screen8(buf_back,binfo->scrnx,binfo->scrny);//画屏幕背景
+	init_mouse_cursor8(buf_mouse,99);//透明色99
+	sheet_slide(shtctl,sht_back,0,0);
 	mx=(binfo->scrnx- 16)/2;		//鼠标定位
 	my=(binfo->scrny- 28 - 16)/2;
-	init_mouse_cursor8(mcursor,COL8_008484);
-	putblock8_8(binfo->vram,binfo->scrnx,16,16,mx,my,mcursor,16);
-	sprintf(s,"(%d,%d)",mx,my);	//写入内存
-	putfonts8_asc(binfo->vram,binfo->scrnx,0,0,COL8_FFFFFF,s);//输出mx，my
+	
+	sheet_slide(shtctl,sht_mouse,mx,my);
+	sheet_updown(shtctl,sht_back,0);
+	sheet_updown(shtctl,sht_mouse,1);
+	
+	sprintf(s,"(%3d,%3d)",mx,my);	//写入内存
+	putfonts8_asc(buf_back,binfo->scrnx,0,0,COL8_FFFFFF,s);//输出mx，my
 	
 	//内存信息
 	sprintf(s,"memory %d MB , free %d KB , lost %d KB",memtotal / (1024*1024),memman_total(memman) / 1024,memman->lostsize / 1024);
-	putfonts8_asc(binfo->vram,binfo->scrnx,0,32,COL8_FFFFFF,s);
+	putfonts8_asc(buf_back,binfo->scrnx,0,32,COL8_FFFFFF,s);
+	sheet_refresh(shtctl);
 	
 	
 	
@@ -65,8 +81,9 @@ void HariMain()
 				i = fifo8_get(&keyfifo);
 				io_sti();
 				sprintf(s,"%02X",i);
-				boxfill8(binfo->vram,binfo->scrnx,COL8_008484,0,16,15,31);
-				putfonts8_asc(binfo->vram,binfo->scrnx,0,16,COL8_FFFFFF,s);
+				boxfill8(buf_back,binfo->scrnx,COL8_008484,0,16,15,31);
+				putfonts8_asc(buf_back,binfo->scrnx,0,16,COL8_FFFFFF,s);
+				sheet_refresh(shtctl);
 			}
 			else if(fifo8_status(&mousefifo) != 0)
 			{
@@ -87,10 +104,10 @@ void HariMain()
 					{
 						s[2] = 'C';
 					}
-					boxfill8(binfo->vram,binfo->scrnx,COL8_008484,32,16,32+15*8-1,31);		//与键盘显示区错开
-					putfonts8_asc(binfo->vram,binfo->scrnx,32,16,COL8_FFFFFF,s);
+					boxfill8(buf_back,binfo->scrnx,COL8_008484,32,16,32+15*8-1,31);		//与键盘显示区错开
+					putfonts8_asc(buf_back,binfo->scrnx,32,16,COL8_FFFFFF,s);
 					//移动鼠标的部分
-					boxfill8(binfo->vram,binfo->scrnx,COL8_008484,mx,my,mx+16,my+16);		//擦除原鼠标
+					//TODO:FROM THIS;
 					mx += mdec.x;
 					my += mdec.y;
 					//防止越出边界
@@ -104,10 +121,9 @@ void HariMain()
 						my = binfo->scrny - 16;
 						
 					sprintf(s,"(%3d,%3d)",mx,my);								//写入内存
-					boxfill8(binfo->vram,binfo->scrnx,COL8_008484,0,0,79,15);	//抹去原数字
-					putfonts8_asc(binfo->vram,binfo->scrnx,0,0,COL8_FFFFFF,s);	//输出mx，my
-					
-					putblock8_8(binfo->vram,binfo->scrnx,16,16,mx,my,mcursor,16);	//重画鼠标
+					boxfill8(buf_back,binfo->scrnx,COL8_008484,0,0,79,15);	//抹去原数字
+					putfonts8_asc(buf_back,binfo->scrnx,0,0,COL8_FFFFFF,s);	//输出mx，my
+					sheet_slide(shtctl,sht_mouse,mx,my);
 				}
 				
 			}

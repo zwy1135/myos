@@ -161,4 +161,27 @@ int memman_free(struct MEMMAN *man,unsigned int addr,unsigned int size);
 unsigned int memman_alloc_4k(struct MEMMAN *man,unsigned int size);
 int memman_free_4k(struct MEMMAN *man,unsigned int addr,unsigned int size);
 
+//sheet.c
+struct SHEET						//图层信息
+{
+	unsigned char *buf;
+	int bxsize,bysize/*图层的x，y大小*/,vx0,vy0/*图层的位置*/,col_inv/*颜色和可见性*/,height,flags;
+};
 
+#define MAX_SHEETS			256		//最大图层数
+
+struct SHTCTL						//图层组管理信息
+{
+	unsigned char *vram;
+	int xsize,ysize,top;
+	struct SHEET *sheets[MAX_SHEETS];
+	struct SHEET sheet0[MAX_SHEETS];
+};
+
+struct SHTCTL *shtctl_init(struct MEMMAN *memman,unsigned char *vram,int xsize,int ysize);
+struct SHEET *sheet_alloc(struct SHTCTL *ctl);
+void sheet_setbuf(struct SHEET *sht,unsigned char *buf,int xsize,int ysize,int col_inv);
+void sheet_updown(struct SHTCTL *ctl,struct SHEET *sht,int height);
+void sheet_refresh(struct SHTCTL *ctl);
+void sheet_slide(struct SHTCTL *ctl,struct SHEET *sht,int vx0,int vy0);
+void sheet_free(struct SHTCTL *ctl,struct SHEET *sht);
