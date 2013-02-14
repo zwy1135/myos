@@ -13,11 +13,11 @@ void HariMain()
 	struct MOUSE_DEC mdec;
 	char s[40],keybuf[32],mousebuf[128];
 	int mx,my,i;
-	unsigned int memtotal;
+	unsigned int memtotal,count = 0;
 	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
 	struct SHTCTL *shtctl;
-	struct SHEET *sht_back,*sht_mouse,*sht_win;
-	unsigned char *buf_back,buf_mouse[256],*buf_win;
+	struct SHEET *sht_back,*sht_mouse,*sht_win,*sht_win_counter;
+	unsigned char *buf_back,buf_mouse[256],*buf_win,*buf_win_counter;
 	
 	//初始化部分
 	init_gdtidt();
@@ -45,27 +45,34 @@ void HariMain()
 	sht_back = sheet_alloc(shtctl);
 	sht_mouse = sheet_alloc(shtctl);
 	sht_win = sheet_alloc(shtctl);
+	sht_win_counter = sheet_alloc(shtctl);
 	buf_back = (unsigned char *)memman_alloc_4k(memman,binfo->scrnx * binfo->scrny);
-	buf_win = (unsigned char *)memman_alloc_4k(memman,160*68);
+	buf_win = (unsigned char *)memman_alloc_4k(memman,160 * 68);
+	buf_win_counter = (unsigned char *)memman_alloc_4k(memman,160 * 52);
 	sheet_setbuf(sht_back,buf_back,binfo->scrnx,binfo->scrny,-1);	//背景无透明色
 	sheet_setbuf(sht_mouse,buf_mouse,16,16,99);		//透明色为99
 	sheet_setbuf(sht_win,buf_win,160,68,-1);		//无透明色
+	sheet_setbuf(sht_win_counter,buf_win_counter,160,52,-1);
 	
 	//以下是显示的内容
 	init_screen8(buf_back,binfo->scrnx,binfo->scrny);//画屏幕背景
 	init_mouse_cursor8(buf_mouse,99);//透明色99
 	make_window8(buf_win,160,68,"A window");
-	putfonts8_asc(buf_win,160,24,28,COL8_000000,"That's first");
-	putfonts8_asc(buf_win,160,45,44,COL8_000000,"WINDOW");
+	putfonts8_asc(buf_win,160,24,28,COL8_000000,"That's os of");
+	putfonts8_asc(buf_win,160,50,44,COL8_000000,"z wy");
+	make_window8(buf_win_counter,160,52,"counter");
+	
 	sheet_slide(sht_back,0,0);
 	mx=(binfo->scrnx- 16)/2;		//鼠标定位
 	my=(binfo->scrny- 28 - 16)/2;
 	
 	sheet_slide(sht_mouse,mx,my);
 	sheet_updown(sht_back,0);
-	sheet_updown(sht_mouse,2);
+	sheet_updown(sht_mouse,3);
 	sheet_updown(sht_win,1);
-	sheet_slide(sht_win,80,72);
+	sheet_updown(sht_win_counter,2);
+	sheet_slide(sht_win,0,72);
+	sheet_slide(sht_win_counter,160,72);
 	
 	sprintf(s,"(%3d,%3d)",mx,my);	//写入内存
 	putfonts8_asc(buf_back,binfo->scrnx,0,0,COL8_FFFFFF,s);//输出mx，my
@@ -79,11 +86,15 @@ void HariMain()
 	
 	while(1)
 	{
+		count++;
+		sprintf(s,"%010d",count);
+		boxfill8(buf_win_counter,160,COL8_C6C6C6,40,28,119,43);
+		putfonts8_asc(buf_win_counter,160,40,28,COL8_000000,s);
+		sheet_refresh(sht_win_counter,40,28,120,44);
+		
 		io_cli();
 		if(fifo8_status(&keyfifo) + fifo8_status(&mousefifo) == 0)
-		{
-			io_stihlt();
-		}
+			io_sti();
 		else
 		{
 			if(fifo8_status(&keyfifo) != 0)
