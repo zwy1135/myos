@@ -14,6 +14,7 @@ struct SHTCTL *shtctl_init(struct MEMMAN *memman,unsigned char *vram,int xsize,i
 	for(i = 0;i < MAX_SHEETS;i++)
 	{
 		ctl->sheet0[i].flags = 0;	//标记为未使用
+		ctl->sheet0[i].ctl = ctl;	//记录所属
 	}
 err:
 	return ctl;
@@ -47,8 +48,9 @@ void sheet_setbuf(struct SHEET *sht,unsigned char *buf,int xsize,int ysize,int c
 	return;
 }
 
-void sheet_updown(struct SHTCTL *ctl,struct SHEET *sht,int height)
+void sheet_updown(struct SHEET *sht,int height)
 {
+	struct SHTCTL *ctl = sht->ctl;
 	int h,old = sht->height;		//存储之前的高度信息
 	//高度过高或过低则修正
 	if(height > ctl->top +1)
@@ -110,32 +112,32 @@ void sheet_updown(struct SHTCTL *ctl,struct SHEET *sht,int height)
 	return;
 }
 
-void sheet_refresh(struct SHTCTL *ctl,struct SHEET *sht,int bx0,int by0,int bx1,int by1)		//从下至上重绘屏幕
+void sheet_refresh(struct SHEET *sht,int bx0,int by0,int bx1,int by1)		//从下至上重绘屏幕
 {
 	if(sht->height >= 0)		//正在显示则刷新
 	{
-		sheet_refreshsub(ctl,sht->vx0 + bx0,sht->vy0 + by0,sht->vx0 + bx1,sht->vy0 + by1);
+		sheet_refreshsub(sht->ctl,sht->vx0 + bx0,sht->vy0 + by0,sht->vx0 + bx1,sht->vy0 + by1);
 	}
 	return;
 }
 
-void sheet_slide(struct SHTCTL *ctl,struct SHEET *sht,int vx0,int vy0)		//改变图层的位置
+void sheet_slide(struct SHEET *sht,int vx0,int vy0)		//改变图层的位置
 {
 	int old_vx0 = sht->vx0,old_vy0 = sht->vy0;
 	sht->vx0 = vx0;
 	sht->vy0 = vy0;
 	if(sht->height >= 0)				//正在显示才刷新
 	{
-		sheet_refreshsub(ctl,old_vx0,old_vy0,old_vx0 + sht->bxsize,old_vy0 + sht->bysize);
-		sheet_refreshsub(ctl,vx0,vy0,vx0 + sht->bxsize,vy0 +sht->bysize);
+		sheet_refreshsub(sht->ctl,old_vx0,old_vy0,old_vx0 + sht->bxsize,old_vy0 + sht->bysize);
+		sheet_refreshsub(sht->ctl,vx0,vy0,vx0 + sht->bxsize,vy0 +sht->bysize);
 	}
 	return;
 }
 
-void sheet_free(struct SHTCTL *ctl,struct SHEET *sht)			//释放不使用的图层
+void sheet_free(struct SHEET *sht)			//释放不使用的图层
 {
 	if(sht->height >= 0)		//如果正在显示则隐藏
-		sheet_updown(ctl,sht,-1);
+		sheet_updown(sht,-1);
 	sht->flags = 0;				//设为未使用
 	return;
 }

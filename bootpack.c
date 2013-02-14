@@ -49,13 +49,13 @@ void HariMain()
 	//以下是显示的内容
 	init_screen8(buf_back,binfo->scrnx,binfo->scrny);//画屏幕背景
 	init_mouse_cursor8(buf_mouse,99);//透明色99
-	sheet_slide(shtctl,sht_back,0,0);
+	sheet_slide(sht_back,0,0);
 	mx=(binfo->scrnx- 16)/2;		//鼠标定位
 	my=(binfo->scrny- 28 - 16)/2;
 	
-	sheet_slide(shtctl,sht_mouse,mx,my);
-	sheet_updown(shtctl,sht_back,0);
-	sheet_updown(shtctl,sht_mouse,1);
+	sheet_slide(sht_mouse,mx,my);
+	sheet_updown(sht_back,0);
+	sheet_updown(sht_mouse,1);
 	
 	sprintf(s,"(%3d,%3d)",mx,my);	//写入内存
 	putfonts8_asc(buf_back,binfo->scrnx,0,0,COL8_FFFFFF,s);//输出mx，my
@@ -63,7 +63,7 @@ void HariMain()
 	//内存信息
 	sprintf(s,"memory %d MB , free %d KB , lost %d KB",memtotal / (1024*1024),memman_total(memman) / 1024,memman->lostsize / 1024);
 	putfonts8_asc(buf_back,binfo->scrnx,0,32,COL8_FFFFFF,s);
-	sheet_refresh(shtctl,sht_back,0,0,binfo->scrnx,96);		//因为上面sheet_slide刷新过一次，所以只刷新到48
+	sheet_refresh(sht_back,0,0,binfo->scrnx,96);		//因为上面sheet_slide刷新过一次，所以只刷新到48
 	
 	
 	
@@ -83,7 +83,7 @@ void HariMain()
 				sprintf(s,"%02X",i);
 				boxfill8(buf_back,binfo->scrnx,COL8_008484,0,16,15,31);
 				putfonts8_asc(buf_back,binfo->scrnx,0,16,COL8_FFFFFF,s);
-				sheet_refresh(shtctl,sht_back,0,16,16,32);		//只刷新键盘信息区
+				sheet_refresh(sht_back,0,16,16,32);		//只刷新键盘信息区
 			}
 			else if(fifo8_status(&mousefifo) != 0)
 			{
@@ -106,7 +106,7 @@ void HariMain()
 					}
 					boxfill8(buf_back,binfo->scrnx,COL8_008484,32,16,32+15*8-1,31);		//与键盘显示区错开
 					putfonts8_asc(buf_back,binfo->scrnx,32,16,COL8_FFFFFF,s);
-					sheet_refresh(shtctl,sht_back,32,16,32+15*8-1,32);		//刷新鼠标动作信息区
+					sheet_refresh(sht_back,32,16,32+15*8-1,32);		//刷新鼠标动作信息区
 					//移动鼠标的部分
 					mx += mdec.x;
 					my += mdec.y;
@@ -123,8 +123,8 @@ void HariMain()
 					sprintf(s,"(%3d,%3d)",mx,my);								//写入内存
 					boxfill8(buf_back,binfo->scrnx,COL8_008484,0,0,79,15);	//抹去原数字
 					putfonts8_asc(buf_back,binfo->scrnx,0,0,COL8_FFFFFF,s);	//输出mx，my
-					sheet_refresh(shtctl,sht_back,0,0,80,16);
-					sheet_slide(shtctl,sht_mouse,mx,my);
+					sheet_refresh(sht_back,0,0,80,16);
+					sheet_slide(sht_mouse,mx,my);
 				}
 				
 			}
