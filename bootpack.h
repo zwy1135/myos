@@ -165,7 +165,7 @@ int memman_free_4k(struct MEMMAN *man,unsigned int addr,unsigned int size);
 struct SHEET						//图层信息
 {
 	unsigned char *buf;
-	int bxsize,bysize/*图层的x，y大小*/,vx0,vy0/*图层的位置*/,col_inv/*颜色和可见性*/,height,flags;
+	int bxsize,bysize/*图层的x，y大小*/,vx0,vy0/*图层的位置*/,col_inv/*透明色*/,height,flags;
 	struct SHTCTL *ctl;
 };
 
@@ -173,7 +173,7 @@ struct SHEET						//图层信息
 
 struct SHTCTL						//图层组管理信息
 {
-	unsigned char *vram;
+	unsigned char *vram,*map;
 	int xsize,ysize,top;
 	struct SHEET *sheets[MAX_SHEETS];
 	struct SHEET sheet0[MAX_SHEETS];
@@ -186,5 +186,5 @@ void sheet_updown(struct SHEET *sht,int height);
 void sheet_refresh(struct SHEET *sht,int bx0,int by0,int bx1,int by1);
 void sheet_slide(struct SHEET *sht,int vx0,int vy0);
 void sheet_free(struct SHEET *sht);
-void sheet_refreshsub(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0);
-
+void sheet_refreshsub(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0,int h1);
+void sheet_refreshmap(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0);
