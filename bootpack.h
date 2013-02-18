@@ -26,6 +26,7 @@ int load_cr0();
 void store_cr0(int cr0);
 unsigned int memtest_sub(unsigned int start,unsigned int end);
 
+void asm_inthandler20();
 void asm_inthandler21(void);
 void asm_inthandler27(void);
 void asm_inthandler2c(void);
@@ -188,3 +189,13 @@ void sheet_slide(struct SHEET *sht,int vx0,int vy0);
 void sheet_free(struct SHEET *sht);
 void sheet_refreshsub(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0,int h1);
 void sheet_refreshmap(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0);
+
+//timer.c
+struct TIMERCTL
+{
+	unsigned int count;
+};
+
+void init_pit();
+void inthandler20(int *esp);
+

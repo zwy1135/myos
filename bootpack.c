@@ -6,6 +6,7 @@ void make_window8(unsigned char *buf, int xsize, int ysize, char *title);
 
 extern struct FIFO8 keyfifo;
 extern struct FIFO8 mousefifo;
+extern struct TIMERCTL timerctl;
 
 void HariMain()
 {
@@ -28,7 +29,8 @@ void HariMain()
 	fifo8_init(&keyfifo, 32, keybuf);		//初始化键盘FIFO
 	fifo8_init(&mousefifo,128,mousebuf);	//初始化鼠标FIFO
 	
-	io_out8(PIC0_IMR, 0xf9); /* 1 2 号端口打开，PIC1和键盘启用(11111001) */
+	init_pit();
+	io_out8(PIC0_IMR, 0xf8); /* 0 1 2 号端口打开，PIT PIC1和键盘启用(11111000) */
 	io_out8(PIC1_IMR, 0xef); /* IRQ12打开，鼠标启用(11101111) */
 	
 	init_keybroad();
@@ -60,7 +62,7 @@ void HariMain()
 	make_window8(buf_win,160,68,"A window");
 	putfonts8_asc(buf_win,160,24,28,COL8_000000,"That's os of");
 	putfonts8_asc(buf_win,160,50,44,COL8_000000,"z wy");
-	make_window8(buf_win_counter,160,52,"counter");
+	make_window8(buf_win_counter,160,52,"timer");
 	
 	sheet_slide(sht_back,0,0);
 	mx=(binfo->scrnx- 16)/2;		//鼠标定位
@@ -86,8 +88,7 @@ void HariMain()
 	
 	while(1)
 	{
-		count++;
-		sprintf(s,"%010d",count);
+		sprintf(s,"%010d",timerctl.count);
 		boxfill8(buf_win_counter,160,COL8_C6C6C6,40,28,119,43);
 		putfonts8_asc(buf_win_counter,160,40,28,COL8_000000,s);
 		sheet_refresh(sht_win_counter,40,28,120,44);

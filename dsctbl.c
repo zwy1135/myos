@@ -5,8 +5,8 @@
 
 void init_gdtidt()
 {
-	struct SEGMENT_DESCRIPTOR *gdt=(struct SEGMENT_DESCRIPTOR *) ADR_GDT;
-	struct GATE_DESCRIPTOR    *idt = (struct GATE_DESCRIPTOR  *) ADR_IDT;
+	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
+	struct GATE_DESCRIPTOR    *idt = (struct GATE_DESCRIPTOR	*) ADR_IDT;
 	int i;
 	
 	//初始化GDT
@@ -31,7 +31,7 @@ void init_gdtidt()
 	
 	//IDT设定
 
-
+	set_gatedesc(idt + 0x20, (int) asm_inthandler20, 2 * 8, AR_INTGATE32);
 	set_gatedesc(idt + 0x21, (int) asm_inthandler21, 2 * 8, AR_INTGATE32);
 	set_gatedesc(idt + 0x27, (int) asm_inthandler27, 2 * 8, AR_INTGATE32);
 	set_gatedesc(idt + 0x2c, (int) asm_inthandler2c, 2 * 8, AR_INTGATE32);
