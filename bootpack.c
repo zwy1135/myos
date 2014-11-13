@@ -19,6 +19,9 @@ void HariMain()
 	struct SHTCTL *shtctl;
 	struct SHEET *sht_back,*sht_mouse,*sht_win,*sht_win_counter;
 	unsigned char *buf_back,buf_mouse[256],*buf_win,*buf_win_counter;
+
+	struct FIFO8 timerfifo;
+	char timerbuf[8];
 	
 	//初始化部分
 	init_gdtidt();
@@ -46,22 +49,26 @@ void HariMain()
 	shtctl = shtctl_init(memman,binfo->vram,binfo->scrnx,binfo->scrny);
 	sht_back = sheet_alloc(shtctl);
 	sht_mouse = sheet_alloc(shtctl);
-	sht_win = sheet_alloc(shtctl);
+	//sht_win = sheet_alloc(shtctl);
 	sht_win_counter = sheet_alloc(shtctl);
 	buf_back = (unsigned char *)memman_alloc_4k(memman,binfo->scrnx * binfo->scrny);
-	buf_win = (unsigned char *)memman_alloc_4k(memman,160 * 68);
+	//buf_win = (unsigned char *)memman_alloc_4k(memman,160 * 68);
 	buf_win_counter = (unsigned char *)memman_alloc_4k(memman,160 * 52);
 	sheet_setbuf(sht_back,buf_back,binfo->scrnx,binfo->scrny,-1);	//背景无透明色
 	sheet_setbuf(sht_mouse,buf_mouse,16,16,99);		//透明色为99
-	sheet_setbuf(sht_win,buf_win,160,68,-1);		//无透明色
+	//sheet_setbuf(sht_win,buf_win,160,68,-1);		//无透明色
 	sheet_setbuf(sht_win_counter,buf_win_counter,160,52,-1);
+
+	//超时定时器初始化
+	fifo8_init(&timerfifo, 8, timerbuf);
+	settimer(1000, &timerfifo, 1);
 	
 	//以下是显示的内容
 	init_screen8(buf_back,binfo->scrnx,binfo->scrny);//画屏幕背景
 	init_mouse_cursor8(buf_mouse,99);//透明色99
-	make_window8(buf_win,160,68,"A window");
-	putfonts8_asc(buf_win,160,24,28,COL8_000000,"That's os of");
-	putfonts8_asc(buf_win,160,50,44,COL8_000000,"z wy");
+	//make_window8(buf_win,160,68,"A window");
+	//putfonts8_asc(buf_win,160,24,28,COL8_000000,"That's os of");
+	//putfonts8_asc(buf_win,160,50,44,COL8_000000,"z wy");
 	make_window8(buf_win_counter,160,52,"timer");
 	
 	sheet_slide(sht_back,0,0);
@@ -71,10 +78,10 @@ void HariMain()
 	sheet_slide(sht_mouse,mx,my);
 	sheet_updown(sht_back,0);
 	sheet_updown(sht_mouse,3);
-	sheet_updown(sht_win,1);
+	//sheet_updown(sht_win,1);
 	sheet_updown(sht_win_counter,2);
-	sheet_slide(sht_win,0,72);
-	sheet_slide(sht_win_counter,160,72);
+	//sheet_slide(sht_win,0,72);
+	sheet_slide(sht_win_counter,100,72);
 	
 	sprintf(s,"(%3d,%3d)",mx,my);	//写入内存
 	putfonts8_asc(buf_back,binfo->scrnx,0,0,COL8_FFFFFF,s);//输出mx，my
@@ -86,7 +93,7 @@ void HariMain()
 	
 	
 	
-	while(1)
+	for(;;)
 	{
 		sprintf(s,"%010d",timerctl.count);
 		boxfill8(buf_win_counter,160,COL8_C6C6C6,40,28,119,43);
@@ -94,7 +101,7 @@ void HariMain()
 		sheet_refresh(sht_win_counter,40,28,120,44);
 		
 		io_cli();
-		if(fifo8_status(&keyfifo) + fifo8_status(&mousefifo) == 0)
+		if(fifo8_status(&keyfifo) + fifo8_status(&mousefifo) + fifo8_status(&timerfifo) == 0)
 			io_sti();
 		else
 		{
@@ -149,6 +156,13 @@ void HariMain()
 					sheet_slide(sht_mouse,mx,my);
 				}
 				
+			}
+			else if(fifo8_status(&timerfifo) != 0)
+			{
+				i = fifo8_get(&timerfifo);
+				io_sti();
+				putfonts8_asc(buf_back, binfo->scrnx, 0, 64, COL8_FFFFFF, "10 seconds");
+				sheet_refresh(sht_back, 0, 64, 56, 80);
 			}
 		}
 	}
