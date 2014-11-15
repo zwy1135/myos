@@ -1,8 +1,15 @@
 //有关鼠标的部分
 #include "bootpack.h"
 
-void enable_mouse(struct MOUSE_DEC *mdec)					//激活鼠标
+struct FIFO32 *mousefifo;
+int mousedata0;
+
+void enable_mouse(struct FIFO32 *fifo, int data0, struct MOUSE_DEC *mdec)					//激活鼠标
 {
+	//只用一个FIFO，所以这里只保存指针；
+	mousefifo = fifo;
+	mousedata0 = data0;
+
 	wait_KBC_sendready();
 	io_out8(PORT_KEYCMD, KEYCMD_SENDTO_MOUSE);
 	wait_KBC_sendready();
@@ -58,15 +65,15 @@ int mouse_decode(struct MOUSE_DEC *mdec,unsigned char dat)		//解读鼠标信息
 	return -1;								//错误信号，应该不会出现
 }
 
-struct FIFO8 mousefifo;
+
 
 void inthandler2c(int *esp)					//处理PS/2鼠标的中断
 {
-	unsigned char data;
+	int data;
 	io_out8(PIC1_OCW2,0x64);				//恢复12号中断响应，PIC1的4号
 	io_out8(PIC0_OCW2,0x62);				//恢复2号中断响应，PIC0的2号链接PIC1
 	data = io_in8(PORT_KEYDAT);
-	fifo8_put(&mousefifo,data);
+	fifo32_put(mousefifo, data + mousedata0);
 	return;
 }
 

@@ -5,15 +5,14 @@
 void make_window8(unsigned char *buf, int xsize, int ysize, char *title);
 void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int color, int background, char *s,int length);
 
-extern struct FIFO8 keyfifo;
-extern struct FIFO8 mousefifo;
+
 extern struct TIMERCTL timerctl;
 
 void HariMain()
 {
 	struct BOOTINFO *binfo=(struct BOOTINFO *) ADR_BOOTINFO;
 	struct MOUSE_DEC mdec;
-	char s[40],keybuf[32],mousebuf[128];
+	char s[40];
 	int mx,my,i;
 	unsigned int memtotal,count = 0;
 	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
@@ -21,9 +20,10 @@ void HariMain()
 	struct SHEET *sht_back,*sht_mouse,*sht_win,*sht_win_counter;
 	unsigned char *buf_back,buf_mouse[256],*buf_win,*buf_win_counter;
 	//timer initial
-	struct FIFO8 timerfifo;//, timerfifo2, timerfifo3;
-	char timerbuf[8];//, timerbuf2[8], timerbuf3[8];
 	struct TIMER *timer, *timer2, *timer3;
+	//all fifo
+	int fifobuf[256];
+	struct FIFO32 fifo;
 
 	
 
@@ -36,15 +36,15 @@ void HariMain()
 	
 	io_sti();			//interrupt flag 变为1，开始接受中断
 	
-	fifo8_init(&keyfifo, 32, keybuf);		//初始化键盘FIFO
-	fifo8_init(&mousefifo,128,mousebuf);	//初始化鼠标FIFO
+	fifo32_init(&fifo, 256, fifobuf);		//初始化键盘FIFO
+
 	
 	init_pit();
 	io_out8(PIC0_IMR, 0xf8); /* 0 1 2 号端口打开，PIT PIC1和键盘启用(11111000) */
 	io_out8(PIC1_IMR, 0xef); /* IRQ12打开，鼠标启用(11101111) */
 	
-	init_keybroad();
-	enable_mouse(&mdec);
+	init_keyboard(&fifo, 256);
+	enable_mouse(&fifo, 512, &mdec);
 	
 	memtotal = memtest(0x00400000,0xbfffffff);
 	memman_init(memman);
@@ -67,15 +67,15 @@ void HariMain()
 	sheet_setbuf(sht_win_counter,buf_win_counter,160,52,-1);
 
 	//超时定时器初始化
-	fifo8_init(&timerfifo, 8, timerbuf);
+	fifo32_init(&fifo, 8, fifobuf);
 	timer = timer_alloc();
-	timer_init(timer, &timerfifo, 10);
+	timer_init(timer, &fifo, 10);
 	timer_settime(timer, 1001);
 	timer2 = timer_alloc();
-	timer_init(timer2, &timerfifo, 3);
+	timer_init(timer2, &fifo, 3);
 	timer_settime(timer2, 301);
 	timer3 = timer_alloc();
-	timer_init(timer3, &timerfifo, 1);
+	timer_init(timer3, &fifo, 1);
 	timer_settime(timer3, 51);
 
 	
@@ -130,22 +130,20 @@ void HariMain()
 		count ++;
 		
 		io_cli();
-		if(fifo8_status(&keyfifo) + fifo8_status(&mousefifo) + fifo8_status(&timerfifo) == 0)
+		if(fifo32_status(&fifo) == 0)
 			io_sti();
 		else
 		{
-			if(fifo8_status(&keyfifo) != 0)
+			i = fifo32_get(&fifo);
+			io_sti();
+			if(256 <= i && i <= 511)
 			{
-				i = fifo8_get(&keyfifo);
-				io_sti();
-				sprintf(s,"%02X",i);
+				sprintf(s,"%02X",i - 256);
 				putfonts8_asc_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
 			}
-			else if(fifo8_status(&mousefifo) != 0)
+			else if(512 <= i && i <= 767)
 			{
-				i = fifo8_get(&mousefifo);
-				io_sti();
-				if((mouse_decode(&mdec,i)) != 0)
+				if((mouse_decode(&mdec,i - 512)) != 0)
 				{
 					sprintf(s,"[lcr %4d %4d]",mdec.x,mdec.y);
 					if((mdec.btn & 0x01) != 0)							//第一位左键
@@ -180,38 +178,32 @@ void HariMain()
 				}
 				
 			}
-			else if(fifo8_status(&timerfifo) != 0)
+			else if(i == 10)
 			{
-				i = fifo8_get(&timerfifo);
-				io_sti();
-				if(i == 10)
-				{
-					putfonts8_asc_sht(sht_back,0,64,COL8_FFFFFF,COL8_008484,"10 seconds",10);
-					sprintf(s,"%010d",count);
-					putfonts8_asc_sht(sht_win_counter,40,28,COL8_000000,COL8_C6C6C6,s,10);
-				}
-				else if(i == 3)
-				{
-					putfonts8_asc_sht(sht_back,0,80,COL8_FFFFFF,COL8_008484,"3 seconds",9);
-					count = 0;
-				}
-				else
-				{
-					if(i == 1)
-					{
-						timer_init(timer3,&timerfifo,0);
-						boxfill8(sht_back->buf,sht_back->bxsize,COL8_FFFFFF,0,96,7,111);
-					}
-					else
-					{
-						timer_init(timer3,&timerfifo,1);
-						boxfill8(sht_back->buf,sht_back->bxsize,COL8_008484,0,96,7,111);
-					}
-					timer_settime(timer3,51);
-					sheet_refresh(sht_back,0,96,8,112);
-				}
+				putfonts8_asc_sht(sht_back,0,64,COL8_FFFFFF,COL8_008484,"10 seconds",10);
+				sprintf(s,"%010d",count);
+				putfonts8_asc_sht(sht_win_counter,40,28,COL8_000000,COL8_C6C6C6,s,10);
 			}
-			
+			else if(i == 3)
+			{
+				putfonts8_asc_sht(sht_back,0,80,COL8_FFFFFF,COL8_008484,"3 seconds",9);
+				count = 0;
+			}
+			else
+			{
+				if(i == 1)
+				{
+					timer_init(timer3,&fifo,0);
+					boxfill8(sht_back->buf,sht_back->bxsize,COL8_FFFFFF,0,96,7,111);
+				}
+				else if(i == 0)
+				{
+					timer_init(timer3,&fifo,1);
+					boxfill8(sht_back->buf,sht_back->bxsize,COL8_008484,0,96,7,111);
+				}
+				timer_settime(timer3,51);
+				sheet_refresh(sht_back,0,96,8,112);	
+			}
 		}
 	}
 }
