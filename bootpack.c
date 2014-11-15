@@ -21,9 +21,10 @@ void HariMain()
 	struct SHEET *sht_back,*sht_mouse,*sht_win,*sht_win_counter;
 	unsigned char *buf_back,buf_mouse[256],*buf_win,*buf_win_counter;
 	//timer initial
-	struct FIFO8 timerfifo, timerfifo2, timerfifo3;
-	char timerbuf[8], timerbuf2[8], timerbuf3[8];
+	struct FIFO8 timerfifo;//, timerfifo2, timerfifo3;
+	char timerbuf[8];//, timerbuf2[8], timerbuf3[8];
 	struct TIMER *timer, *timer2, *timer3;
+
 	
 
 
@@ -68,15 +69,13 @@ void HariMain()
 	//超时定时器初始化
 	fifo8_init(&timerfifo, 8, timerbuf);
 	timer = timer_alloc();
-	timer_init(timer, &timerfifo, 1);
+	timer_init(timer, &timerfifo, 10);
 	timer_settime(timer, 1001);
-	fifo8_init(&timerfifo2, 8, timerbuf2);
 	timer2 = timer_alloc();
-	timer_init(timer2, &timerfifo2, 1);
+	timer_init(timer2, &timerfifo, 3);
 	timer_settime(timer2, 301);
-	fifo8_init(&timerfifo3, 8 , timerbuf3);
 	timer3 = timer_alloc();
-	timer_init(timer3, &timerfifo3, 1);
+	timer_init(timer3, &timerfifo, 1);
 	timer_settime(timer3, 51);
 
 	
@@ -124,14 +123,14 @@ void HariMain()
 	//中断FIFO处理
 	for(;;)
 	{
-		sprintf(s,"%010d",timerctl.count);
-		boxfill8(buf_win_counter,160,COL8_C6C6C6,40,28,119,43);
-		putfonts8_asc(buf_win_counter,160,40,28,COL8_000000,s);
-		sheet_refresh(sht_win_counter,40,28,120,44);
+		//sprintf(s,"%010d",timerctl.count);
+		//boxfill8(buf_win_counter,160,COL8_C6C6C6,40,28,119,43);
+		//putfonts8_asc(buf_win_counter,160,40,28,COL8_000000,s);
+		//sheet_refresh(sht_win_counter,40,28,120,44);
+		count ++;
 		
 		io_cli();
-		if(fifo8_status(&keyfifo) + fifo8_status(&mousefifo) + 
-			fifo8_status(&timerfifo) + fifo8_status(&timerfifo2) + fifo8_status(&timerfifo3) == 0)
+		if(fifo8_status(&keyfifo) + fifo8_status(&mousefifo) + fifo8_status(&timerfifo) == 0)
 			io_sti();
 		else
 		{
@@ -140,9 +139,6 @@ void HariMain()
 				i = fifo8_get(&keyfifo);
 				io_sti();
 				sprintf(s,"%02X",i);
-				//boxfill8(buf_back,binfo->scrnx,COL8_008484,0,16,15,31);
-				//putfonts8_asc(buf_back,binfo->scrnx,0,16,COL8_FFFFFF,s);
-				//sheet_refresh(sht_back,0,16,16,32);		//只刷新键盘信息区
 				putfonts8_asc_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
 			}
 			else if(fifo8_status(&mousefifo) != 0)
@@ -164,9 +160,6 @@ void HariMain()
 					{
 						s[2] = 'C';
 					}
-					//boxfill8(buf_back,binfo->scrnx,COL8_008484,32,16,32+15*8-1,31);		//与键盘显示区错开
-					//putfonts8_asc(buf_back,binfo->scrnx,32,16,COL8_FFFFFF,s);
-					//sheet_refresh(sht_back,32,16,32+15*8-1,32);		//刷新鼠标动作信息区
 					putfonts8_asc_sht(sht_back,32,16,COL8_FFFFFF,COL8_008484,s,15);
 					//移动鼠标的部分
 					mx += mdec.x;
@@ -182,9 +175,6 @@ void HariMain()
 						my = binfo->scrny - 1;
 						
 					sprintf(s,"(%3d,%3d)",mx,my);								//写入内存
-					//boxfill8(buf_back,binfo->scrnx,COL8_008484,0,0,79,15);	//抹去原数字
-					//putfonts8_asc(buf_back,binfo->scrnx,0,0,COL8_FFFFFF,s);	//输出mx，my
-					//sheet_refresh(sht_back,0,0,80,16);
 					putfonts8_asc_sht(sht_back,0,0,COL8_FFFFFF,COL8_008484,s,10);
 					sheet_slide(sht_mouse,mx,my);
 				}
@@ -194,35 +184,34 @@ void HariMain()
 			{
 				i = fifo8_get(&timerfifo);
 				io_sti();
-				//putfonts8_asc(buf_back, binfo->scrnx, 0, 64, COL8_FFFFFF, "10 seconds");
-				//sheet_refresh(sht_back, 0, 64, 80, 80);
-				putfonts8_asc_sht(sht_back,0,64,COL8_FFFFFF,COL8_008484,"10 seconds",10);
-			}
-			else if(fifo8_status(&timerfifo2) != 0)
-			{
-				i = fifo8_get(&timerfifo2);
-				io_sti();
-				//putfonts8_asc(buf_back, binfo->scrnx, 0, 80, COL8_FFFFFF, "3 seconds");
-				//sheet_refresh(sht_back, 0, 80, 72, 96);
-				putfonts8_asc_sht(sht_back,0,80,COL8_FFFFFF,COL8_008484,"3 seconds",9);
-			}
-			else if(fifo8_status(&timerfifo3) != 0)
-			{
-				i = fifo8_get(&timerfifo3);
-				io_sti();
-				if (i != 0)
+				if(i == 10)
 				{
-					timer_init(timer3, &timerfifo3, 0);
-					boxfill8(buf_back, binfo->scrnx, COL8_FFFFFF, 0, 96, 7, 111);
+					putfonts8_asc_sht(sht_back,0,64,COL8_FFFFFF,COL8_008484,"10 seconds",10);
+					sprintf(s,"%010d",count);
+					putfonts8_asc_sht(sht_win_counter,40,28,COL8_000000,COL8_C6C6C6,s,10);
+				}
+				else if(i == 3)
+				{
+					putfonts8_asc_sht(sht_back,0,80,COL8_FFFFFF,COL8_008484,"3 seconds",9);
+					count = 0;
 				}
 				else
 				{
-					timer_init(timer3, &timerfifo3, 1);
-					boxfill8(buf_back, binfo->scrnx, COL8_008484, 0, 96, 7, 111);
+					if(i == 1)
+					{
+						timer_init(timer3,&timerfifo,0);
+						boxfill8(sht_back->buf,sht_back->bxsize,COL8_FFFFFF,0,96,7,111);
+					}
+					else
+					{
+						timer_init(timer3,&timerfifo,1);
+						boxfill8(sht_back->buf,sht_back->bxsize,COL8_008484,0,96,7,111);
+					}
+					timer_settime(timer3,51);
+					sheet_refresh(sht_back,0,96,8,112);
 				}
-				timer_settime(timer3, 51);
-				sheet_refresh(sht_back, 0, 96, 8, 112);
 			}
+			
 		}
 	}
 }
