@@ -15,8 +15,8 @@ BIM2HRB  = $(TOOLPATH)bim2hrb.exe
 RULEFILE = $(TOOLPATH)haribote/haribote.rul
 EDIMG    = $(TOOLPATH)edimg.exe
 IMGTOL   = $(TOOLPATH)imgtol.com
-COPY     = copy
-DEL      = del
+COPY     = cmd /c copy
+DEL      = rm
 
 #默认设定
 
@@ -51,7 +51,7 @@ bootpack.hrb:bootpack.bim Makefile
 	
 
 haribote.sys: asmhead.bin bootpack.hrb Makefile
-	copy /B asmhead.bin+bootpack.hrb haribote.sys
+	$(COPY) /B asmhead.bin+bootpack.hrb haribote.sys
 
 haribote.img:ipl10.bin haribote.sys Makefile
 	$(EDIMG)	imgin:../z_tools/fdimg0at.tek \

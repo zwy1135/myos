@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 void make_window8(unsigned char *buf, int xsize, int ysize, char *title);
+void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int color, int background, char *s,int length);
 
 extern struct FIFO8 keyfifo;
 extern struct FIFO8 mousefifo;
@@ -139,9 +140,10 @@ void HariMain()
 				i = fifo8_get(&keyfifo);
 				io_sti();
 				sprintf(s,"%02X",i);
-				boxfill8(buf_back,binfo->scrnx,COL8_008484,0,16,15,31);
-				putfonts8_asc(buf_back,binfo->scrnx,0,16,COL8_FFFFFF,s);
-				sheet_refresh(sht_back,0,16,16,32);		//只刷新键盘信息区
+				//boxfill8(buf_back,binfo->scrnx,COL8_008484,0,16,15,31);
+				//putfonts8_asc(buf_back,binfo->scrnx,0,16,COL8_FFFFFF,s);
+				//sheet_refresh(sht_back,0,16,16,32);		//只刷新键盘信息区
+				putfonts8_asc_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
 			}
 			else if(fifo8_status(&mousefifo) != 0)
 			{
@@ -162,9 +164,10 @@ void HariMain()
 					{
 						s[2] = 'C';
 					}
-					boxfill8(buf_back,binfo->scrnx,COL8_008484,32,16,32+15*8-1,31);		//与键盘显示区错开
-					putfonts8_asc(buf_back,binfo->scrnx,32,16,COL8_FFFFFF,s);
-					sheet_refresh(sht_back,32,16,32+15*8-1,32);		//刷新鼠标动作信息区
+					//boxfill8(buf_back,binfo->scrnx,COL8_008484,32,16,32+15*8-1,31);		//与键盘显示区错开
+					//putfonts8_asc(buf_back,binfo->scrnx,32,16,COL8_FFFFFF,s);
+					//sheet_refresh(sht_back,32,16,32+15*8-1,32);		//刷新鼠标动作信息区
+					putfonts8_asc_sht(sht_back,32,16,COL8_FFFFFF,COL8_008484,s,15);
 					//移动鼠标的部分
 					mx += mdec.x;
 					my += mdec.y;
@@ -179,9 +182,10 @@ void HariMain()
 						my = binfo->scrny - 1;
 						
 					sprintf(s,"(%3d,%3d)",mx,my);								//写入内存
-					boxfill8(buf_back,binfo->scrnx,COL8_008484,0,0,79,15);	//抹去原数字
-					putfonts8_asc(buf_back,binfo->scrnx,0,0,COL8_FFFFFF,s);	//输出mx，my
-					sheet_refresh(sht_back,0,0,80,16);
+					//boxfill8(buf_back,binfo->scrnx,COL8_008484,0,0,79,15);	//抹去原数字
+					//putfonts8_asc(buf_back,binfo->scrnx,0,0,COL8_FFFFFF,s);	//输出mx，my
+					//sheet_refresh(sht_back,0,0,80,16);
+					putfonts8_asc_sht(sht_back,0,0,COL8_FFFFFF,COL8_008484,s,10);
 					sheet_slide(sht_mouse,mx,my);
 				}
 				
@@ -190,15 +194,17 @@ void HariMain()
 			{
 				i = fifo8_get(&timerfifo);
 				io_sti();
-				putfonts8_asc(buf_back, binfo->scrnx, 0, 64, COL8_FFFFFF, "10 seconds");
-				sheet_refresh(sht_back, 0, 64, 80, 80);
+				//putfonts8_asc(buf_back, binfo->scrnx, 0, 64, COL8_FFFFFF, "10 seconds");
+				//sheet_refresh(sht_back, 0, 64, 80, 80);
+				putfonts8_asc_sht(sht_back,0,64,COL8_FFFFFF,COL8_008484,"10 seconds",10);
 			}
 			else if(fifo8_status(&timerfifo2) != 0)
 			{
 				i = fifo8_get(&timerfifo2);
 				io_sti();
-				putfonts8_asc(buf_back, binfo->scrnx, 0, 80, COL8_FFFFFF, "3 seconds");
-				sheet_refresh(sht_back, 0, 80, 72, 96);
+				//putfonts8_asc(buf_back, binfo->scrnx, 0, 80, COL8_FFFFFF, "3 seconds");
+				//sheet_refresh(sht_back, 0, 80, 72, 96);
+				putfonts8_asc_sht(sht_back,0,80,COL8_FFFFFF,COL8_008484,"3 seconds",9);
 			}
 			else if(fifo8_status(&timerfifo3) != 0)
 			{
@@ -269,3 +275,13 @@ void make_window8(unsigned char *buf, int xsize, int ysize, char *title)	//描�
 	}
 	return;
 }
+
+void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int color, int background, char *s,int length)
+{
+	boxfill8(sht->buf, sht->bxsize, background, x, y, x + length*8 - 1, y + 15);
+	putfonts8_asc(sht->buf, sht->bxsize, x, y, color, s);
+	sheet_refresh(sht, x, y, x + length*8, y + 16);
+	return;
+}
+
+

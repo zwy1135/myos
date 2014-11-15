@@ -105,6 +105,8 @@ void putfonts8_asc(char *vram, int xsize, int x, int y, char c, unsigned char *s
 	return;
 }
 
+
+
 void init_mouse_cursor8(char *mouse, char bc)
 /* 准备指针（16x16） */
 {
@@ -143,6 +145,7 @@ void init_mouse_cursor8(char *mouse, char bc)
 	}
 	return;
 }
+
 void putblock8_8(char *vram, int vxsize, int pxsize,
 	int pysize, int px0, int py0, char *buf, int bxsize)
 	//显示鼠标指针，其中buf是鼠标指针数据

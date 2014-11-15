@@ -49,6 +49,7 @@ void boxfill8(unsigned char *vram,int xsize,unsigned char c,int x0,int y0,int x1
 void init_screen8(char *vram,int x,int y);
 void putfont8(char *vram,int xsize,int x,int y,char c,char*font);
 void putfonts8_asc(char *vram, int xsize, int x, int y, char c, unsigned char *s);
+
 void init_mouse_cursor8(char *mouse,char bc);
 void putblock8_8(char *vram,int vxsize,int pxsize,int pysize,int px0,int py0,char *buf,int bxsize);
 #define COL8_000000		0			//颜色
@@ -189,6 +190,8 @@ void sheet_slide(struct SHEET *sht,int vx0,int vy0);
 void sheet_free(struct SHEET *sht);
 void sheet_refreshsub(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0,int h1);
 void sheet_refreshmap(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0);
+
+
 
 //timer.c
 #define MAX_TIMER	500
