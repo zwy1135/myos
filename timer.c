@@ -29,6 +29,8 @@ void init_pit()
 void inthandler20(int *esp)
 {
 	int i,j;
+	struct TIMER *timer;
+
 	io_out8(PIC0_OCW2,0x60);
 	timerctl.count++;
 
@@ -36,24 +38,23 @@ void inthandler20(int *esp)
 	{
 		return;
 	}
-	//此处timers一定是顺序排列的，排前面的一定先timeout
+	
+	timer = timerctl.t0;
 	for (i = 0; i < timerctl.using; ++i)
 	{
-		if (timerctl.timers[i]->timeout > timerctl.count)
+		if (timer->timeout > timerctl.count)
 			break;
 
-		timerctl.timers[i]->flags = TIMER_FLAGS_ALLOC;
-		fifo32_put(timerctl.timers[i]->fifo,timerctl.timers[i]->data);
+		timer->flags = TIMER_FLAGS_ALLOC;
+		fifo32_put(timer->fifo,timer->data);
+		timer = timer->next;
 	}
 
 	timerctl.using -= i;
 
-	for(j = 0;j < timerctl.using; j++)
-	{
-		timerctl.timers[j] = timerctl.timers[i + j];
-	}
+	timerctl.t0 = timer;
 
-	timerctl.next = (timerctl.using > 0)? timerctl.timers[0]->timeout : 0xffffffff;
+	timerctl.next = (timerctl.using > 0)? timerctl.t0->timeout : 0xffffffff;
 	return;
 }
 
@@ -98,41 +99,45 @@ void timer_init(struct TIMER *timer,struct FIFO32 *fifo,int data)
 
 void timer_settime(struct TIMER *timer,unsigned int timeout)
 {
-	int e, i, j;
+	int e;
+	struct TIMER *t;
 	timer->timeout = timerctl.count + timeout;
 	timer->flags = TIMER_FLAGS_USING;
 	e = io_load_eflags();
 	io_cli();
-	//二分搜索该插入的位置
-	int low,high,mid;
-	low = 0;
-	high = timerctl.using - 1;
-	while(low < high)
+	
+	timerctl.using ++;
+	//插入空队列
+	if(timerctl.using == 1)
 	{
-		mid = (low + high)/2;
-		if (timerctl.timers[mid]->timeout == timer->timeout)
-		{
-			low = mid;
-			break;
-		}
-		else if(timerctl.timers[mid]->timeout < timer->timeout)
-			low = mid + 1;
-		else 
-		{
-			high = mid - 1;
-		}
+		timerctl.t0 = timer;
+		timerctl.next = timer->timeout;
+		timer->next = NULL;
+		io_store_eflags(e);
+		return;
 	}
-	i = low;
-	//后移一位，腾出位置
-	for(j = timerctl.using;j > i;j--)
+
+	//插入非空队列
+	t = timerctl.t0;
+	//插入最前
+	if(timer->timeout < t->timeout)
 	{
-		timerctl.timers[j] = timerctl.timers[j - 1];
+		timer->next = t;
+		timerctl.t0 = timer;
+		timerctl.next = timer->timeout;
+		io_store_eflags(e);
+		return;
 	}
-	timerctl.using ++ ;
-	//插入
-	timerctl.timers[i] = timer;
-	timerctl.next = timerctl.timers[0]->timeout;
-	io_store_eflags(e);//eflags带有中断标志位，所以不用sti
+	else
+	{
+		for(;t->next != NULL && t->next->timeout < timer->timeout;t = t->next);
+
+		timer->next = t->next;
+		t->next = timer;
+		io_store_eflags(e);
+		return;
+	}
+
 	return;
 }
 

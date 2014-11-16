@@ -1,3 +1,5 @@
+#define NULL 	(void*)0
+
 //asmhead.nas
 struct BOOTINFO	
 {
@@ -208,6 +210,7 @@ void sheet_refreshmap(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0)
 
 struct TIMER
 {
+	struct TIMER *next;
 	unsigned int timeout;
 	unsigned int flags;
 	struct FIFO32 *fifo;
@@ -217,7 +220,7 @@ struct TIMER
 struct TIMERCTL
 {
 	struct TIMER timers0[MAX_TIMER];
-	struct TIMER *timers[MAX_TIMER];
+	struct TIMER *t0;
 
 	unsigned int count;
 	unsigned int next;
