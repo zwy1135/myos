@@ -99,10 +99,11 @@ void HariMain()
 	my=(binfo->scrny- 28 - 16)/2;
 	
 	sheet_slide(sht_mouse,mx,my);
+	//最高只能写到top+1，所以初始化顺序很重要
 	sheet_updown(sht_back,0);
+	sheet_updown(sht_win_counter,2);
 	sheet_updown(sht_mouse,3);
 	//sheet_updown(sht_win,1);
-	sheet_updown(sht_win_counter,2);
 	//sheet_slide(sht_win,0,72);
 	sheet_slide(sht_win_counter,100,72);
 	

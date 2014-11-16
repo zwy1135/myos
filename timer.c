@@ -12,23 +12,32 @@ struct TIMERCTL timerctl;
 void init_pit()
 {	
 	int i;
+	struct TIMER *t;
 	io_out8(PIT_CTRL,0x34);
 	io_out8(PIT_CNT0,0x9c);
 	io_out8(PIT_CNT0,0x2e);
 	timerctl.count = 0;
-	timerctl.next = 0xffffffff;
-	timerctl.using = 0;
 
 	for (i = 0; i < MAX_TIMER; ++i)
 	{
 		timerctl.timers0[i].flags = TIMER_FLAGS_FREE;
 	}
+
+	t = timer_alloc();
+	timer_init(t,NULL,0);
+	//settime
+	t->timeout = 0xffffffff;
+	t->flags = TIMER_FLAGS_USING;
+	t->next = NULL;
+
+	timerctl.t0 = t;
+	timerctl.next = t->next;
+
 	return;
 }
 
 void inthandler20(int *esp)
 {
-	int i,j;
 	struct TIMER *timer;
 
 	io_out8(PIC0_OCW2,0x60);
@@ -40,7 +49,7 @@ void inthandler20(int *esp)
 	}
 	
 	timer = timerctl.t0;
-	for (i = 0; i < timerctl.using; ++i)
+	for (;;)
 	{
 		if (timer->timeout > timerctl.count)
 			break;
@@ -50,11 +59,9 @@ void inthandler20(int *esp)
 		timer = timer->next;
 	}
 
-	timerctl.using -= i;
 
 	timerctl.t0 = timer;
-
-	timerctl.next = (timerctl.using > 0)? timerctl.t0->timeout : 0xffffffff;
+	timerctl.next = timerctl.t0->timeout;
 	return;
 }
 
@@ -81,7 +88,7 @@ struct TIMER *timer_alloc(void)
 			return &timerctl.timers0[i];
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 void timer_free(struct TIMER *timer)
@@ -106,18 +113,7 @@ void timer_settime(struct TIMER *timer,unsigned int timeout)
 	e = io_load_eflags();
 	io_cli();
 	
-	timerctl.using ++;
-	//插入空队列
-	if(timerctl.using == 1)
-	{
-		timerctl.t0 = timer;
-		timerctl.next = timer->timeout;
-		timer->next = NULL;
-		io_store_eflags(e);
-		return;
-	}
-
-	//插入非空队列
+	//插入非空队列,有哨兵绝对非空
 	t = timerctl.t0;
 	//插入最前
 	if(timer->timeout < t->timeout)
