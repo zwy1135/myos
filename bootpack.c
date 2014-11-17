@@ -8,6 +8,15 @@ void putfonts8_asc_sht(struct SHEET *sht, int x, int y, int color, int backgroun
 
 extern struct TIMERCTL timerctl;
 
+static char keytable[0x54] = {
+	0,   0,   '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '+', 0,   0,
+	'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', 0,   0,   'A', 'S',
+	'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', '\'', 0,   0,   '\\', 'Z', 'X', 'C', 'V',
+	'B', 'N', 'M', ',', '.', '/', 0,   '*', 0,   ' ', 0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   0,   0,   0,   '7', '8', '9', '-', '4', '5', '6', '+', '1',
+	'2', '3', '0', '.'
+};
+
 void HariMain()
 {
 	struct BOOTINFO *binfo=(struct BOOTINFO *) ADR_BOOTINFO;
@@ -141,6 +150,12 @@ void HariMain()
 			{
 				sprintf(s,"%02X",i - 256);
 				putfonts8_asc_sht(sht_back, 0, 16, COL8_FFFFFF, COL8_008484, s, 2);
+				if(i < 256 + 0x54)
+				{
+					s[0] = keytable[i - 256];
+					s[1] = '\0';
+					putfonts8_asc_sht(sht_back, 24, 16, COL8_FFFFFF, COL8_008484, s, 2);
+				}
 			}
 			else if(512 <= i && i <= 767)
 			{
@@ -159,7 +174,7 @@ void HariMain()
 					{
 						s[2] = 'C';
 					}
-					putfonts8_asc_sht(sht_back,32,16,COL8_FFFFFF,COL8_008484,s,15);
+					putfonts8_asc_sht(sht_back,48,16,COL8_FFFFFF,COL8_008484,s,15);
 					//移动鼠标的部分
 					mx += mdec.x;
 					my += mdec.y;
