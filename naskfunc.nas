@@ -1,10 +1,10 @@
 ; naskfunc
 ; TAB=4
 
-[FORMAT "WCOFF"]				; ¿´²»¶®	
-[INSTRSET "i486p"]				; 486ÒÔÉÏcpu
-[BITS 32]						; 32Î»Ä£Ê½
-[FILE "naskfunc.nas"]			; ¿´²»¶®
+[FORMAT "WCOFF"]				; çœ‹ä¸æ‡‚	
+[INSTRSET "i486p"]				; 486ä»¥ä¸Šcpu
+[BITS 32]						; 32ä½æ¨¡å¼
+[FILE "naskfunc.nas"]			; çœ‹ä¸æ‡‚
 
 		GLOBAL	_io_hlt, _io_cli, _io_sti, _io_stihlt
 		GLOBAL	_io_in8,  _io_in16,  _io_in32
@@ -15,6 +15,10 @@
 		GLOBAL	_asm_inthandler20, _asm_inthandler21
 		GLOBAL	_asm_inthandler27, _asm_inthandler2c
 		GLOBAL	_memtest_sub
+		;for multitask
+		GLOBAL	_load_tr, _taskswitch4, _taskswitch3, _farjump
+
+		;interrupt handler
 		EXTERN	_inthandler20, _inthandler21
 		EXTERN	_inthandler27, _inthandler2c
 
@@ -73,14 +77,14 @@ _io_out32:	; void io_out32(int port, int data);
 		RET
 
 _io_load_eflags:	; int io_load_eflags(void);
-		PUSHFD		; PUSH EFLAGS ‚Æ‚¢‚¤ˆÓ–¡
+		PUSHFD		; PUSH EFLAGS å²å„å†å „æ´
 		POP		EAX
 		RET
 
 _io_store_eflags:	; void io_store_eflags(int eflags);
 		MOV		EAX,[ESP+4]
 		PUSH	EAX
-		POPFD		; POP EFLAGS ‚Æ‚¢‚¤ˆÓ–¡
+		POPFD		; POP EFLAGS å²å„å†å „æ´
 		RET
 
 _load_gdtr:		; void load_gdtr(int limit, int addr);
@@ -172,7 +176,7 @@ _asm_inthandler2c:
 		
 
 _memtest_sub:	;unsigned int memtest_sub(unsigned int start,unsigned int end)
-		PUSH	EDI			;»¹ÒªÊ¹ÓÃÕâÈı¸ö¼Ä´æÆ÷
+		PUSH	EDI			;è¿˜è¦ä½¿ç”¨è¿™ä¸‰ä¸ªå¯„å­˜å™¨
 
 		PUSH	ESI
 		PUSH	EBX
@@ -203,5 +207,21 @@ mts_fin:
 		POP		EBX
 		POP		ESI
 		POP		EDI
+		RET
+
+_load_tr:		;void load_tr(int tr);
+		LTR		[ESP+4]		;tr
+		RET
+
+_taskswitch4:	;void taskswitch4(void) è·³åˆ°task4
+		JMP		4*8:0
+		RET
+
+_taskswitch3: 	;void taskswitch3(void)
+		JMP		3*8:0
+		RET
+
+_farjump:		;void farjump(int eip, int cs);
+		JMP 	FAR [ESP+4]
 		RET
 		
