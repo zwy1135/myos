@@ -148,7 +148,9 @@ void HariMain()
 
 	set_segmdesc(gdt + 3, 103, (int)&tss_a, AR_TSS32);	//AR_TSS32 = 0x0089,书上没讲
 	set_segmdesc(gdt + 4, 103, (int)&tss_b, AR_TSS32);
-	task_b_esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024;
+	task_b_esp = memman_alloc_4k(memman, 64 * 1024) + 64 * 1024 - 8;
+
+	*((int*)(task_b_esp + 4)) = (int) sht_back;
 
 	load_tr(3 * 8);
 
@@ -290,18 +292,27 @@ void HariMain()
 }
 
 
-void task_b_main()
+void task_b_main(struct SHEET *sht_back)
 {
 	struct FIFO32 fifo;
-	struct TIMER *timer;
+	struct TIMER *timer,*timer_put,*timer_1s;
 	int i, fifobuf[128];
+	char s[20];
+	int count = 0, count0 = 0;
 
 	fifo32_init(&fifo, 128, fifobuf);
 	timer = timer_alloc();
 	timer_init(timer, &fifo, 1);
 	timer_settime(timer, 2);
+	timer_put = timer_alloc();
+	timer_init(timer_put, &fifo, 2);
+	timer_settime(timer_put, 10);
+	timer_1s = timer_alloc();
+	timer_init(timer_1s, &fifo, 100);
+	timer_settime(timer_1s, 100);
 	for(;;)
 	{
+		count ++;
 		io_cli();
 		if(fifo32_status(&fifo) == 0)
 		{
@@ -315,6 +326,19 @@ void task_b_main()
 			{
 				farjump(0,3*8);
 				timer_settime(timer, 2);
+			}
+			else if(i == 2)
+			{
+				sprintf(s,"%11d",count);
+				putfonts8_asc_sht(sht_back, 0, 144, COL8_FFFFFF, COL8_008484, s, 11);
+				timer_settime(timer_put, 10);
+			}
+			else if(i == 100)
+			{
+				sprintf(s,"%11d",count - count0);
+				putfonts8_asc_sht(sht_back, 0, 128, COL8_FFFFFF, COL8_008484, s, 11);
+				timer_settime(timer_1s,100);
+				count0 = count;
 			}
 		}
 	}
