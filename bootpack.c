@@ -41,7 +41,7 @@ void HariMain()
 	int task_b_esp;
 	struct TSS32 tss_a, tss_b;
 	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *)ADR_GDT;
-	struct TIMER *timer_ts;
+	
 
 	
 
@@ -95,11 +95,7 @@ void HariMain()
 	timer3 = timer_alloc();
 	timer_init(timer3, &fifo, 1);
 	timer_settime(timer3, 51);
-	//for multitask timer
-	timer_ts = timer_alloc();
-	timer_init(timer_ts, &fifo, 2);
-	timer_settime(timer_ts,2);
-
+	
 	
 
 
@@ -170,6 +166,8 @@ void HariMain()
 	tss_b.ds = 1 * 8;
 	tss_b.fs = 1 * 8;
 	tss_b.gs = 1 * 8;
+
+	mt_init();
 
 	
 	
@@ -264,11 +262,6 @@ void HariMain()
 				putfonts8_asc_sht(sht_back,0,80,COL8_FFFFFF,COL8_008484,"3 seconds",9);
 				//count = 0;
 			}
-			else if(i == 2)
-			{
-				farjump(0,4*8);
-				timer_settime(timer_ts, 2);
-			}
 			else
 			{
 				if(i == 1)
@@ -295,17 +288,14 @@ void HariMain()
 void task_b_main(struct SHEET *sht_back)
 {
 	struct FIFO32 fifo;
-	struct TIMER *timer,*timer_put,*timer_1s;
+	struct TIMER *timer_put,*timer_1s;
 	int i, fifobuf[128];
 	char s[20];
 	int count = 0, count0 = 0;
 
 	fifo32_init(&fifo, 128, fifobuf);
-	timer = timer_alloc();
-	timer_init(timer, &fifo, 1);
-	timer_settime(timer, 2);
 	timer_put = timer_alloc();
-	timer_init(timer_put, &fifo, 2);
+	timer_init(timer_put, &fifo, 10);
 	timer_settime(timer_put, 10);
 	timer_1s = timer_alloc();
 	timer_init(timer_1s, &fifo, 100);
@@ -322,12 +312,7 @@ void task_b_main(struct SHEET *sht_back)
 		{
 			io_sti();
 			i = fifo32_get(&fifo);
-			if(i == 1)
-			{
-				farjump(0,3*8);
-				timer_settime(timer, 2);
-			}
-			else if(i == 2)
+			if(i == 10)
 			{
 				sprintf(s,"%11d",count);
 				putfonts8_asc_sht(sht_back, 0, 144, COL8_FFFFFF, COL8_008484, s, 11);

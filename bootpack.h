@@ -237,7 +237,7 @@ void timer_init(struct TIMER *timer,struct FIFO32 *fifo,int data);
 void timer_settime(struct TIMER *timer,unsigned int timeout);
 
 
-//multitask
+//mtask.c
 struct TSS32
 {
 	int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
@@ -245,3 +245,6 @@ struct TSS32
 	int es, cs, ss, ds, fs, gs;
 	int ldtr, iomap;
 };
+
+void mt_init();
+void mt_taskswitch();
