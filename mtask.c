@@ -30,21 +30,23 @@ struct TASK* task_init(struct MEMMAN *memman)
 	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
 	taskctl = (struct TASKCTL *) memman_alloc_4k(memman, sizeof(struct TASKCTL));
 	for(i=0; i<MAX_TASKS; i++)
-	{
-		taskctl->tasks0[i].flags = 0;
+	{taskctl->tasks0[i].flags = 0;
 		taskctl->tasks0[i].sel = (TASK_GDT0 + i) * 8;
 		set_segmdesc(gdt + TASK_GDT0 + i, 103, (int) &taskctl->tasks0[i].tss, AR_TSS32);
 	}
+
 	task = task_alloc();
 	task->flags = 2;
-	taskctl->running = 1;
-	taskctl->now = 0;
-	taskctl->tasks[0] = task;
+	task->next = task;
+	taskctl->head = task;
+	taskctl->nil = task;
+	taskctl->current = task;
 	load_tr(task->sel);
 	task_timer = timer_alloc();
 	timer_settime(task_timer, 2);
 
 	return task;
+
 }
 
 struct TASK* task_alloc(void)
@@ -78,22 +80,23 @@ struct TASK* task_alloc(void)
 	return NULL; //all place is used.
 }
 
+
+
 void task_run(struct TASK* task)
 {
-	task->flags = 2;//running
-	taskctl->tasks[taskctl->running] = task;
-	taskctl->running ++;
+	if(task == NULL)
+		return;
+	task->flags = 2;
+	task->next = taskctl->head;
+	taskctl->nil->next = task;
+	taskctl->nil = task;
 	return;
 }
+
 
 void task_switch(void)
 {
 	timer_settime(task_timer, 2);
-	if(taskctl->running > 1)
-	{
-		taskctl->now++;
-		taskctl->now %= taskctl->running;
-		farjump(0, taskctl->tasks[taskctl->now]->sel);
-	}
-	return;
+	taskctl->current = taskctl->current->next;
+	farjump(0, taskctl->current->sel);
 }

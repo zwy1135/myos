@@ -254,14 +254,15 @@ struct TASK
 {
 	int sel, flags;
 	struct TSS32 tss;
+	struct TASK* next;
 };
 
 struct TASKCTL
 {
-	int running; //number of running task
-	int now; // which task is running now.
+
 	struct TASK *tasks[MAX_TASKS];
 	struct TASK tasks0[MAX_TASKS];
+	struct TASK *head, *nil, *current;
 };
 
 //void mt_init();
