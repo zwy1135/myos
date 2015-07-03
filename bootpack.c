@@ -38,7 +38,7 @@ void HariMain()
 	//for textbox
 	int cursor_x = 8,cursor_color = COL8_FFFFFF;
 	//for multitask
-	struct TASK* task_b;	
+	struct TASK *task_a, *task_b;	
 
 	
 
@@ -51,7 +51,7 @@ void HariMain()
 	
 	io_sti();			//interrupt flag 变为1，开始接受中断
 	
-	fifo32_init(&fifo, 256, fifobuf);		//初始化键盘FIFO
+	fifo32_init(&fifo, 256, fifobuf, NULL);		//初始化键盘FIFO
 
 	
 	init_pit();
@@ -82,7 +82,7 @@ void HariMain()
 	//sheet_setbuf(sht_win_counter,buf_win_counter,160,52,-1);
 
 	//超时定时器初始化
-	fifo32_init(&fifo, 256, fifobuf);
+	fifo32_init(&fifo, 256, fifobuf, NULL);
 	timer = timer_alloc();
 	timer_init(timer, &fifo, 10);
 	timer_settime(timer, 1001);
@@ -134,7 +134,8 @@ void HariMain()
 
 
 	//多任务的内容
-	task_init(memman);
+	task_a = task_init(memman);
+	fifo.task = task_a;
 	task_b = task_alloc();
 	task_b->tss.esp = memman_alloc_4k(memman, 64*1024) + 64*1024 - 8;
 	task_b->tss.eip = (int)&task_b_main;
@@ -165,7 +166,11 @@ void HariMain()
 		
 		io_cli();
 		if(fifo32_status(&fifo) == 0)
-			io_stihlt();
+		{
+			
+			task_sleep(task_a);
+			io_sti();
+		}
 		else
 		{
 			i = fifo32_get(&fifo);
@@ -271,7 +276,7 @@ void task_b_main(struct SHEET *sht_back)
 	char s[20];
 	int count = 0, count0 = 0;
 
-	fifo32_init(&fifo, 128, fifobuf);
+	fifo32_init(&fifo, 128, fifobuf, NULL);
 	timer_put = timer_alloc();
 	timer_init(timer_put, &fifo, 10);
 	timer_settime(timer_put, 10);
@@ -292,7 +297,7 @@ void task_b_main(struct SHEET *sht_back)
 			i = fifo32_get(&fifo);
 			if(i == 10)
 			{
-				sprintf(s,"%11d",count);
+				sprintf(s,"%10d",count);
 				putfonts8_asc_sht(sht_back, 0, 144, COL8_FFFFFF, COL8_008484, s, 11);
 				timer_settime(timer_put, 10);
 			}
