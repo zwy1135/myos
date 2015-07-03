@@ -238,6 +238,10 @@ void timer_settime(struct TIMER *timer,unsigned int timeout);
 
 
 //mtask.c
+
+#define MAX_TASKS 	1000
+#define TASK_GDT0 	3
+
 struct TSS32
 {
 	int backlink, esp0, ss0, esp1, ss1, esp2, ss2, cr3;
@@ -246,5 +250,23 @@ struct TSS32
 	int ldtr, iomap;
 };
 
-void mt_init();
-void mt_taskswitch();
+struct TASK
+{
+	int sel, flags;
+	struct TSS32 tss;
+};
+
+struct TASKCTL
+{
+	int running; //number of running task
+	int now; // which task is running now.
+	struct TASK *tasks[MAX_TASKS];
+	struct TASK tasks0[MAX_TASKS];
+};
+
+//void mt_init();
+//void mt_taskswitch();
+void task_switch(void);
+void task_run(struct TASK* task);
+struct TASK* task_alloc(void);
+struct TASK* task_init(struct MEMMAN *memman);
