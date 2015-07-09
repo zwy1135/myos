@@ -30,7 +30,8 @@ struct TASK *task_init(struct MEMMAN *memman)
 	struct SEGMENT_DESCRIPTOR *gdt = (struct SEGMENT_DESCRIPTOR *) ADR_GDT;
 	taskctl = (struct TASKCTL *) memman_alloc_4k(memman, sizeof(struct TASKCTL));
 	for(i=0; i<MAX_TASKS; i++)
-	{taskctl->tasks0[i].flags = 0;
+	{
+		taskctl->tasks0[i].flags = 0;
 		taskctl->tasks0[i].sel = (TASK_GDT0 + i) * 8;
 		set_segmdesc(gdt + TASK_GDT0 + i, 103, (int) &taskctl->tasks0[i].tss, AR_TSS32);
 	}
@@ -84,11 +85,9 @@ void task_run(struct TASK *task)
 {
 	if(task == NULL || task->flags == 2)
 		return;
-	io_cli();
 	task->flags = 2;
 	task->next = taskctl->current->next;
 	taskctl->current->next = task;
-	io_sti();
 	return;
 }
 
