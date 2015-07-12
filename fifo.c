@@ -83,7 +83,7 @@ int fifo32_put(struct FIFO32 *fifo,int data)	//输入
 	(fifo->free)--;
 
 	if(fifo->task != NULL && fifo->task->flags != 2)
-		task_run(fifo->task);
+		task_run(fifo->task, 0);
 	return 0;				//未溢出
 }
 

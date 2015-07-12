@@ -38,6 +38,7 @@ struct TASK *task_init(struct MEMMAN *memman)
 
 	task = task_alloc();
 	task->flags = 2;
+	task->priority = 2;
 	task->next = task;
 	taskctl->current = task;
 	load_tr(task->sel);
@@ -81,11 +82,18 @@ struct TASK *task_alloc(void)
 
 
 
-void task_run(struct TASK *task)
+void task_run(struct TASK *task, int priority)
 {
-	if(task == NULL || task->flags == 2)
+	if(task == NULL)
+		return;
+
+	if(priority > 0)
+		task->priority = priority;
+	
+	if(task->flags == 2)
 		return;
 	task->flags = 2;
+	
 	task->next = taskctl->current->next;
 	taskctl->current->next = task;
 	return;
@@ -94,10 +102,11 @@ void task_run(struct TASK *task)
 
 void task_switch(void)
 {
-	timer_settime(task_timer, 2);
+	
 	if(taskctl->current == taskctl->current->next)
 		return;
 	taskctl->current = taskctl->current->next;
+	timer_settime(task_timer, taskctl->current->priority);
 	farjump(0, taskctl->current->sel);
 }
 

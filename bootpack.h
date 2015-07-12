@@ -254,6 +254,7 @@ struct TSS32
 struct TASK
 {
 	int sel, flags;
+	int priority;
 	struct TSS32 tss;
 	struct TASK* next;
 };
@@ -267,7 +268,7 @@ struct TASKCTL
 //void mt_init();
 //void mt_taskswitch();
 void task_switch(void);
-void task_run(struct TASK* task);
+void task_run(struct TASK *task, int priority);
 struct TASK* task_alloc(void);
 struct TASK* task_init(struct MEMMAN *memman);
 void task_sleep(struct TASK *task);
